@@ -8,8 +8,9 @@ from queue import Queue
 log = open('errors.log', 'w')
 
 class Sitemap_boss():
-    def __init__(self):
+    def __init__(self, sitemap):
         self._to_run = Queue()
+        self._to_run.put_nowait(sitemap)
         self.run()
 
     def _identify_format(self, sitemap):
@@ -19,9 +20,15 @@ class Sitemap_boss():
         else:
             return self._read_standard(sitemap)
 
+    def _add_to_queue(self, soup):
+        sitemaps = soup.find_all('sitemap')
+        [self._to_run.put_nowait(u.find('loc').text) for u in sitemaps]
+
     def _read_standard(self, sitemap):
         with requests.get(sitemap, stream=True) as r:
             soup = BeautifulSoup(r.content, 'lxml')
+            if soup.find_all('sitemap') != None:
+                return self._add_to_queue(soup)
             urls = soup.find_all('url')
             clean = [u.find('loc').text for u in urls]
             return clean
@@ -31,6 +38,8 @@ class Sitemap_boss():
             with requests.get(sitemap, stream=True) as r:
                 sitemap = gzip.GzipFile(fileobj=BytesIO(r.content)).read()
                 soup = BeautifulSoup(sitemap, 'lxml')
+                if soup.find_all('sitemap') != None:
+                    return self._add_to_queue(soup)
                 urls = soup.find_all('url')
                 clean = [u.find('loc').text for u in urls]
                 return clean
@@ -44,9 +53,9 @@ class Sitemap_boss():
             raise(e)
 
     def run(self):
-        a = self._identify_format('https://www.zoopla.co.uk/xmlsitemap/sitemap/invest_index_1/invest_index_1_invest_article_1.xml.gz')
-        b = self._identify_format('https://www.fundingoptions.com/sitemap.xml')
-        print(len(a), len (b))
+        while self._to_run.qsize() > 0:
+            sitemap = self._to_run.get_nowait()
+            a = self._identify_format(sitemap)
 
 
-Sitemap_boss()
+Sitemap_boss('https://adaptworldwide.com/sitemap_index.xml')
