@@ -49,22 +49,28 @@ class Sitemap_boss():
             print("Incorrect sitemap encoding trying with no compression")
             log.write("Incorrect extension,{}\n".format(sitemap))
             return self._read_standard(sitemap)
+
         except Exception as e:
             log.write(str(e))  # log exception info at FATAL log level
             raise(e)
 
-    def save(self, urls):
+    def save(self, urls, sitemap):
+        error_count = 0
         for url in urls:
-            print(url)
-            self.file.write("{}\n".format(url))
+            try:
+                self.file.write("{}\n".format(url))
+            except:
+                error_count +=1
+        print(error_count)
+        log.write("{},{}\n".format(sitemap, error_count))
 
     def run(self):
         while self._to_run.qsize() > 0:
             sitemap = self._to_run.get_nowait()
+            print(sitemap)
             a = self._identify_format(sitemap)
-            print(a)
             if a is not None:
-                self.save(a)
+                self.save(a, sitemap)
 
 
-Sitemap_boss('https://adaptworldwide.com/post-sitemap.xml')
+Sitemap_boss('https://www.bookdepository.com/sitemaps/item/sitemap.xml.gz')
