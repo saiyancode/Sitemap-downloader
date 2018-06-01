@@ -58,7 +58,7 @@ class Sitemap_boss():
         error_count = 0
         for url in urls:
             try:
-                self.file.write("{}\n".format(url))
+                self.file.write("{},{}\n".format(url,sitemap))
             except:
                 error_count +=1
         print(error_count)
