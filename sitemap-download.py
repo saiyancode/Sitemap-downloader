@@ -24,10 +24,12 @@ class Sitemap_boss():
     def _add_to_queue(self, soup):
         sitemaps = soup.find_all('sitemap')
         [self._to_run.put_nowait(u.find('loc').text) for u in sitemaps]
+        print(self._to_run.queue)
 
     def _read_standard(self, sitemap):
         with requests.get(sitemap, stream=True) as r:
             soup = BeautifulSoup(r.content, 'lxml')
+            #TODO make this handle CDATA
             if len(soup.find_all('sitemap')) != 0:
                 return self._add_to_queue(soup)
             urls = soup.find_all('url')
@@ -67,10 +69,10 @@ class Sitemap_boss():
     def run(self):
         while self._to_run.qsize() > 0:
             sitemap = self._to_run.get_nowait()
-            print(sitemap)
             a = self._identify_format(sitemap)
             if a is not None:
                 self.save(a, sitemap)
 
+# print(requests.get("https://willcecil.co.uk/sitemap.xml"))
 
-Sitemap_boss('https://www.bookdepository.com/sitemaps/item/sitemap.xml.gz')
+Sitemap_boss("https://willcecil.co.uk/sitemap.xml")
