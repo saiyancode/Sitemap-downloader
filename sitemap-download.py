@@ -11,7 +11,6 @@ class Sitemap_boss():
     def __init__(self, sitemap):
         self._to_run = Queue()
         self._to_run.put_nowait(sitemap)
-        self.file = open('results.csv',mode='a')
         self.run()
 
     def _identify_format(self, sitemap):
@@ -24,12 +23,11 @@ class Sitemap_boss():
     def _add_to_queue(self, soup):
         sitemaps = soup.find_all('sitemap')
         [self._to_run.put_nowait(u.find('loc').text) for u in sitemaps]
-        print(self._to_run.queue)
 
     def _read_standard(self, sitemap):
+        parser = et.XMLParser(strip_cdata=False)
         with requests.get(sitemap, stream=True) as r:
-            soup = BeautifulSoup(r.content, 'lxml')
-            #TODO make this handle CDATA
+            soup = BeautifulSoup(r.content, 'html.parser')
             if len(soup.find_all('sitemap')) != 0:
                 return self._add_to_queue(soup)
             urls = soup.find_all('url')
@@ -40,7 +38,7 @@ class Sitemap_boss():
         try:
             with requests.get(sitemap, stream=True) as r:
                 sitemap = gzip.GzipFile(fileobj=BytesIO(r.content)).read()
-                soup = BeautifulSoup(sitemap, 'lxml')
+                soup = BeautifulSoup(sitemap, 'html.parser')
                 if len(soup.find_all('sitemap')) != 0:
                     return self._add_to_queue(soup)
                 urls = soup.find_all('url')
@@ -63,7 +61,6 @@ class Sitemap_boss():
                 self.file.write("{},{}\n".format(url,sitemap))
             except:
                 error_count +=1
-        print(error_count)
         log.write("{},{}\n".format(sitemap, error_count))
 
     def run(self):
